@@ -70,21 +70,16 @@ void cadastrarCliente() {
     Cliente c;
 
     printf("\n=== Cadastro de Cliente ===\n");
-
     printf("Nome do cliente: ");
     scanf(" %[^\n]", c.nome); 
-
     printf("Idade: ");
     scanf("%d", &c.idade);
-
     printf("Email: ");
     scanf(" %99s", c.email);
-
     printf("Saldo: ");
     scanf("%lf", &c.saldoBancario);
 
     fprintf(arquivoCliente, "%s,%d,%s,%.2lf\n", c.nome, c.idade, c.email, c.saldoBancario);
-
     fclose(arquivoCliente);
 
     printf("\nCliente cadastrado com sucesso!\n");
@@ -100,21 +95,16 @@ void cadastrarProduto() {
     Produto p;
 
     printf("\n=== Cadastro de Produto ===\n");
-
     printf("Nome do produto: ");
     scanf(" %[^\n]", p.nomeProduto); 
-
     printf("Descrição do produto: ");
     scanf(" %[^\n]", p.descricao);
-
     printf("Quantidade em estoque: ");
     scanf("%d", &p.quantidade);
-
     printf("Valor do produto: ");
     scanf("%lf", &p.valor);
 
     fprintf(arquivoProduto, "%s,%s,%d,%.2lf\n", p.nomeProduto, p.descricao, p.quantidade, p.valor);
-
     fclose(arquivoProduto);
 
     printf("\nProduto cadastrado com sucesso!\n");
@@ -127,13 +117,12 @@ int validaSaldoCliente(char *nomeCliente, float valorCompra) {
         return 0;
     }
 
-    char linhaDoArquivo[256];
-    char nome[100], email[100];
+    char linha[256], nome[100], email[100];
     int idade;
     double saldo;
 
-    while (fgets(linhaDoArquivo, sizeof(linhaDoArquivo), arquivoCliente)) {
-        sscanf(linhaDoArquivo, "%99[^,],%d,%99[^,],%lf", nome, &idade, email, &saldo);
+    while (fgets(linha, sizeof(linha), arquivoCliente)) {
+        sscanf(linha, "%99[^,],%d,%99[^,],%lf", nome, &idade, email, &saldo);
         if (strcmp(nome, nomeCliente) == 0) {
             fclose(arquivoCliente);
             return saldo >= valorCompra;
@@ -151,13 +140,12 @@ int verificaDisponibilidadeProduto(char *nomeProduto, int quantidadeDesejada) {
         return 0;
     }
 
-    char linhaDoArquivo[256];
-    char nome[100], desc[100];
+    char linha[256], nome[100], desc[100];
     int quantidade;
     double valor;
 
-    while (fgets(linhaDoArquivo, sizeof(linhaDoArquivo),arquivoProduto)){
-        sscanf(linhaDoArquivo, "%99[^,],%99[^,],%d,%lf", nome, desc, &quantidade, &valor);
+    while (fgets(linha, sizeof(linha), arquivoProduto)){
+        sscanf(linha, "%99[^,],%99[^,],%d,%lf", nome, desc, &quantidade, &valor);
         if(strcmp(nome,nomeProduto) == 0){
             fclose(arquivoProduto);
             return quantidade >= quantidadeDesejada;
@@ -172,8 +160,7 @@ int validaCompra(char *nomeCliente, char *nomeProduto, int quantidade) {
     FILE *arquivo = fopen("produtos.csv", "r");
     if (!arquivo) return 0;
 
-    char linha[256];
-    char nome[100], desc[100];
+    char linha[256], nome[100], desc[100];
     int qtd;
     float valor;
 
@@ -190,51 +177,59 @@ int validaCompra(char *nomeCliente, char *nomeProduto, int quantidade) {
     return 0;
 }
 
+// ======== VERSÕES SIMPLIFICADAS ========
+
 void atualizaSaldoCliente(char *nomeCliente, float valorCompra) {
-    FILE *arquivo = fopen("clientes.csv", "r+");
-    char linha[256];
-    long pos;
-
-    while (fgets(linha, sizeof(linha), arquivo)) {
-        char nome[100], email[100];
-        int idade;
-        double saldo;
-        pos = ftell(arquivo);
-
-        sscanf(linha, "%99[^,],%d,%99[^,],%lf", nome, &idade, email, &saldo);
-        if (strcmp(nome, nomeCliente) == 0) {
-            saldo -= valorCompra;
-            fseek(arquivo, pos - strlen(linha), SEEK_SET);
-            fprintf(arquivo, "%s,%d,%s,%.2lf\n", nome, idade, email, saldo);
-            fclose(arquivo);
-            return;
-        }
+    FILE *origem = fopen("clientes.csv", "r");
+    FILE *temp = fopen("temp.csv", "w");
+    if (!origem || !temp) {
+        printf("Erro ao abrir arquivo.\n");
+        return;
     }
-    fclose(arquivo);
+
+    char linha[256], nome[100], email[100];
+    int idade;
+    double saldo;
+
+    while (fgets(linha, sizeof(linha), origem)) {
+        sscanf(linha, "%99[^,],%d,%99[^,],%lf", nome, &idade, email, &saldo);
+        if (strcmp(nome, nomeCliente) == 0)
+            saldo -= valorCompra;
+        fprintf(temp, "%s,%d,%s,%.2lf\n", nome, idade, email, saldo);
+    }
+
+    fclose(origem);
+    fclose(temp);
+    remove("clientes.csv");
+    rename("temp.csv", "clientes.csv");
 }
 
 void atualizaEstoque(char *nomeProduto, int quantidadeComprada) {
-    FILE *arquivo = fopen("produtos.csv", "r+");
-    char linha[256];
-    long pos;
-
-    while (fgets(linha, sizeof(linha), arquivo)) {
-        char nome[100], desc[100];
-        int qtd;
-        float valor;
-        pos = ftell(arquivo);
-
-        sscanf(linha, "%99[^,],%99[^,],%d,%f", nome, desc, &qtd, &valor);
-        if (strcmp(nome, nomeProduto) == 0) {
-            qtd -= quantidadeComprada;
-            fseek(arquivo, pos - strlen(linha), SEEK_SET);
-            fprintf(arquivo, "%s,%s,%d,%.2f\n", nome, desc, qtd, valor);
-            fclose(arquivo);
-            return;
-        }
+    FILE *origem = fopen("produtos.csv", "r");
+    FILE *temp = fopen("temp.csv", "w");
+    if (!origem || !temp) {
+        printf("Erro ao abrir arquivo.\n");
+        return;
     }
-    fclose(arquivo);
+
+    char linha[256], nome[100], desc[100];
+    int qtd;
+    float valor;
+
+    while (fgets(linha, sizeof(linha), origem)) {
+        sscanf(linha, "%99[^,],%99[^,],%d,%f", nome, desc, &qtd, &valor);
+        if (strcmp(nome, nomeProduto) == 0)
+            qtd -= quantidadeComprada;
+        fprintf(temp, "%s,%s,%d,%.2f\n", nome, desc, qtd, valor);
+    }
+
+    fclose(origem);
+    fclose(temp);
+    remove("produtos.csv");
+    rename("temp.csv", "produtos.csv");
 }
+
+// =======================================
 
 void realizarCompra() {
     char nomeCliente[100], nomeProduto[100];
