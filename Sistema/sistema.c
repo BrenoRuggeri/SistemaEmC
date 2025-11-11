@@ -177,8 +177,6 @@ int validaCompra(char *nomeCliente, char *nomeProduto, int quantidade) {
     return 0;
 }
 
-// ======== VERSÕES SIMPLIFICADAS ========
-
 void atualizaSaldoCliente(char *nomeCliente, float valorCompra) {
     FILE *origem = fopen("clientes.csv", "r");
     FILE *temp = fopen("temp.csv", "w");
@@ -228,8 +226,6 @@ void atualizaEstoque(char *nomeProduto, int quantidadeComprada) {
     remove("produtos.csv");
     rename("temp.csv", "produtos.csv");
 }
-
-// =======================================
 
 void realizarCompra() {
     char nomeCliente[100], nomeProduto[100];
